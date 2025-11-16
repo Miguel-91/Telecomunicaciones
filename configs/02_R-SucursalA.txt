@@ -1,0 +1,193 @@
+!============================================
+! ROUTER SUCURSAL A - Configuración Completa
+! Proyecto Telecomunicaciones - Sucursal A
+!============================================
+
+enable
+configure terminal
+
+! ===== CONFIGURACIÓN BÁSICA =====
+hostname R-SucursalA
+no ip domain-lookup
+service password-encryption
+
+! ===== SEGURIDAD - CONTRASEÑAS =====
+enable secret Cisco123!
+line console 0
+ password Console123
+ login
+ logging synchronous
+ exec-timeout 5 0
+ exit
+
+line vty 0 15
+ password VTY123
+ login
+ transport input ssh telnet
+ exec-timeout 10 0
+ exit
+
+! ===== BANNER =====
+banner motd #
+*************************************************
+* ROUTER SUCURSAL A - Oficina Regional         *
+* Acceso Autorizado Solamente                  *
+* Todas las actividades son monitoreadas       *
+* Proyecto: Red Empresarial Multisede          *
+*************************************************
+#
+
+! ===== DESACTIVAR CDP (SEGURIDAD) =====
+no cdp run
+
+! ===== INTERFACES Y SUB-INTERFACES PARA VLANs =====
+
+! Interface hacia Switch Sucursal A (802.1Q Trunking)
+interface GigabitEthernet0/0
+ description *** Enlace Troncal a SW-SucA ***
+ no shutdown
+ exit
+
+! VLAN 10 - Administración Suc. A
+interface GigabitEthernet0/0.10
+ description *** VLAN 10 - Administracion Suc A ***
+ encapsulation dot1Q 10
+ ip address 10.0.16.14 255.255.255.240
+ ipv6 address 2001:db8:acad:A010::1/64
+ ip helper-address 10.0.16.5
+ no shutdown
+ exit
+
+! VLAN 20 - Finanzas Suc. A
+interface GigabitEthernet0/0.20
+ description *** VLAN 20 - Finanzas Suc A ***
+ encapsulation dot1Q 20
+ ip address 10.0.16.94 255.255.255.224
+ ipv6 address 2001:db8:acad:A020::1/64
+ ip helper-address 10.0.16.5
+ no shutdown
+ exit
+
+! VLAN 60 - Voz IP Suc. A
+interface GigabitEthernet0/0.60
+ description *** VLAN 60 - Telefonia IP Suc A ***
+ encapsulation dot1Q 60
+ ip address 10.0.16.126 255.255.255.224
+ ipv6 address 2001:db8:acad:A060::1/64
+ ip helper-address 10.0.16.5
+ no shutdown
+ exit
+
+! VLAN 80 - Corporativo Suc. A (12 hosts)
+interface GigabitEthernet0/0.80
+ description *** VLAN 80 - Corporativo Suc A ***
+ encapsulation dot1Q 80
+ ip address 10.0.16.142 255.255.255.240
+ ipv6 address 2001:db8:acad:A080::1/64
+ ip helper-address 10.0.16.5
+ no shutdown
+ exit
+
+! VLAN 99 - Nativa/Administración
+interface GigabitEthernet0/0.99
+ description *** VLAN 99 - Nativa ***
+ encapsulation dot1Q 99 native
+ ip address 10.0.16.145 255.255.255.252
+ no shutdown
+ exit
+
+! ===== ENLACE WAN A SEDE CENTRAL =====
+interface GigabitEthernet0/1
+ description *** Enlace WAN a Sede Central ***
+ ip address 10.255.1.2 255.255.255.252
+ ipv6 address 2001:db8:acad:FFA1::2/64
+ no shutdown
+ exit
+
+! ===== CONFIGURACIÓN DE OSPF =====
+router ospf 1
+ router-id 2.2.2.2
+ log-adjacency-changes
+ passive-interface GigabitEthernet0/0
+ network 10.0.16.0 0.0.0.255 area 0
+ network 10.255.1.0 0.0.0.3 area 0
+ exit
+
+! ===== CONFIGURACIÓN DE OSPFv3 PARA IPv6 =====
+ipv6 unicast-routing
+ipv6 router ospf 1
+ router-id 2.2.2.2
+ log-adjacency-changes
+ exit
+
+interface GigabitEthernet0/1
+ ipv6 ospf 1 area 0
+ exit
+
+! ===== CONFIGURACIÓN DHCP POR VLAN =====
+
+! DHCP para VLAN 10 - Administración
+ip dhcp excluded-address 10.0.16.1 10.0.16.5
+ip dhcp pool VLAN10-Admin-SucA
+ network 10.0.16.0 255.255.255.240
+ default-router 10.0.16.1
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+! DHCP para VLAN 20 - Finanzas
+ip dhcp excluded-address 10.0.16.64 10.0.16.70
+ip dhcp pool VLAN20-Finanzas-SucA
+ network 10.0.16.64 255.255.255.224
+ default-router 10.0.16.65
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+! DHCP para VLAN 60 - Voz IP
+ip dhcp excluded-address 10.0.16.96 10.0.16.100
+ip dhcp pool VLAN60-VoIP-SucA
+ network 10.0.16.96 255.255.255.224
+ default-router 10.0.16.97
+ dns-server 10.0.2.10
+ option 150 ip 10.0.5.5
+ domain-name empresa.local
+ exit
+
+! DHCP para VLAN 80 - Corporativo
+ip dhcp excluded-address 10.0.16.128 10.0.16.133
+ip dhcp pool VLAN80-Corp-SucA
+ network 10.0.16.128 255.255.255.240
+ default-router 10.0.16.129
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+! ===== CONFIGURACIÓN DE SYSLOG =====
+logging on
+logging trap informational
+logging facility local0
+logging source-interface GigabitEthernet0/0.99
+logging host 10.0.2.20
+service timestamps log datetime msec
+service timestamps debug datetime msec
+
+! ===== CONFIGURACIÓN SNMP (OPCIONAL) =====
+snmp-server community public RO
+snmp-server community private RW
+snmp-server location "Sucursal A - Regional Norte"
+snmp-server contact "Admin Suc A - admin-suca@empresa.local"
+snmp-server enable traps
+snmp-server host 10.0.5.210 version 2c public
+
+! ===== RUTAS ESTÁTICAS PARA REDUNDANCIA (OPCIONAL) =====
+! Ruta de respaldo en caso de fallo OSPF
+ip route 10.0.0.0 255.0.0.0 10.255.1.1 200
+
+! ===== GUARDAR CONFIGURACIÓN =====
+end
+write memory
+
+!============================================
+! FIN DE CONFIGURACIÓN R-SucursalA
+!============================================

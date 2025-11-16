@@ -1,0 +1,274 @@
+!============================================
+! SWITCH CORE 1 - SEDE CENTRAL
+! Configuración Completa (Capa 3)
+!============================================
+
+enable
+configure terminal
+
+! ===== CONFIGURACIÓN BÁSICA =====
+hostname SW-Core1-Central
+no ip domain-lookup
+service password-encryption
+
+! ===== SEGURIDAD - CONTRASEÑAS =====
+enable secret Cisco123!
+line console 0
+ password Console123
+ login
+ logging synchronous
+ exec-timeout 5 0
+ exit
+
+line vty 0 15
+ password VTY123
+ login
+ transport input ssh telnet
+ exec-timeout 10 0
+ exit
+
+! ===== BANNER =====
+banner motd #
+*************************************************
+* SW-CORE1 - Switch Core Sede Central          *
+* Acceso Autorizado Solamente                  *
+* Switch Principal - Capa 3                    *
+*************************************************
+#
+
+! ===== DESACTIVAR CDP EN PUERTOS DE USUARIO =====
+no cdp run
+
+! ===== HABILITAR ENRUTAMIENTO IP (SWITCH CAPA 3) =====
+ip routing
+ipv6 unicast-routing
+
+! ===== CREAR VLANs =====
+vlan 10
+ name Corporativo
+ exit
+vlan 20
+ name Finanzas
+ exit
+vlan 30
+ name Soporte-Tecnico
+ exit
+vlan 40
+ name Recursos-Humanos
+ exit
+vlan 60
+ name Impresoras
+ exit
+vlan 80
+ name Telefonia-IP
+ exit
+vlan 90
+ name Admin-Remota
+ exit
+vlan 99
+ name Nativa-Admin
+ exit
+
+! ===== CONFIGURAR SVIs (Switch Virtual Interfaces) =====
+! Estas IPs son para el respaldo HSRP (Router Secundario)
+
+! VLAN 10 - Corporativo
+interface Vlan10
+ description *** VLAN 10 - Corporativo ***
+ ip address 10.0.1.253 255.255.254.0
+ ipv6 address 2001:db8:acad:0010::2/64
+ standby 10 ip 10.0.1.1
+ standby 10 priority 90
+ no shutdown
+ exit
+
+! VLAN 20 - Finanzas
+interface Vlan20
+ description *** VLAN 20 - Finanzas ***
+ ip address 10.0.5.125 255.255.255.192
+ ipv6 address 2001:db8:acad:0020::2/64
+ standby 20 ip 10.0.5.65
+ standby 20 priority 90
+ no shutdown
+ exit
+
+! VLAN 30 - Soporte Técnico
+interface Vlan30
+ description *** VLAN 30 - Soporte Tecnico ***
+ ip address 10.0.5.157 255.255.255.224
+ ipv6 address 2001:db8:acad:0030::2/64
+ standby 30 ip 10.0.5.129
+ standby 30 priority 90
+ no shutdown
+ exit
+
+! VLAN 40 - Recursos Humanos
+interface Vlan40
+ description *** VLAN 40 - RRHH ***
+ ip address 10.0.5.173 255.255.255.240
+ ipv6 address 2001:db8:acad:0040::2/64
+ standby 40 ip 10.0.5.161
+ standby 40 priority 90
+ no shutdown
+ exit
+
+! VLAN 60 - Impresoras
+interface Vlan60
+ description *** VLAN 60 - Impresoras ***
+ ip address 10.0.5.189 255.255.255.240
+ ipv6 address 2001:db8:acad:0060::2/64
+ standby 60 ip 10.0.5.177
+ standby 60 priority 90
+ no shutdown
+ exit
+
+! VLAN 80 - Telefonía IP
+interface Vlan80
+ description *** VLAN 80 - Telefonia IP ***
+ ip address 10.0.5.61 255.255.255.192
+ ipv6 address 2001:db8:acad:0080::2/64
+ standby 80 ip 10.0.5.1
+ standby 80 priority 90
+ no shutdown
+ exit
+
+! VLAN 90 - Admin Remota
+interface Vlan90
+ description *** VLAN 90 - Admin ***
+ ip address 10.0.5.213 255.255.255.248
+ ipv6 address 2001:db8:acad:0090::2/64
+ standby 90 ip 10.0.5.209
+ standby 90 priority 90
+ no shutdown
+ exit
+
+! VLAN 99 - Administración
+interface Vlan99
+ description *** VLAN 99 - Administracion ***
+ ip address 10.0.5.218 255.255.255.252
+ no shutdown
+ exit
+
+! ===== CONFIGURAR SPANNING TREE =====
+! Configurar este switch como ROOT BRIDGE para todas las VLANs
+spanning-tree mode rapid-pvst
+spanning-tree vlan 10,20,30,40,60,80,90,99 priority 4096
+spanning-tree vlan 10,20,30,40,60,80,90,99 root primary
+spanning-tree portfast default
+spanning-tree portfast bpduguard default
+
+! ===== ETHERCHANNEL HACIA ROUTER CENTRAL =====
+! Agregar enlaces redundantes al Router Central
+interface range GigabitEthernet0/1-2
+ description *** EtherChannel a R-Central ***
+ channel-group 1 mode active
+ no shutdown
+ exit
+
+interface Port-channel1
+ description *** EtherChannel a R-Central ***
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 99
+ switchport trunk allowed vlan 10,20,30,40,60,80,90,99
+ no shutdown
+ exit
+
+! ===== ETHERCHANNEL HACIA SW-ACCESO-1 =====
+interface range GigabitEthernet0/3-4
+ description *** EtherChannel a SW-Acceso-1 ***
+ channel-group 2 mode active
+ no shutdown
+ exit
+
+interface Port-channel2
+ description *** EtherChannel a SW-Acceso-1 ***
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 99
+ switchport trunk allowed vlan 10,20,30,40,60,80,90,99
+ no shutdown
+ exit
+
+! ===== ETHERCHANNEL HACIA SW-ACCESO-2 =====
+interface range GigabitEthernet0/5-6
+ description *** EtherChannel a SW-Acceso-2 ***
+ channel-group 3 mode active
+ no shutdown
+ exit
+
+interface Port-channel3
+ description *** EtherChannel a SW-Acceso-2 ***
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 99
+ switchport trunk allowed vlan 10,20,30,40,60,80,90,99
+ no shutdown
+ exit
+
+! ===== PUERTOS DE ACCESO PARA SERVIDORES =====
+! Servidor DNS/HTTP/HTTPS (VLAN 10)
+interface FastEthernet0/1
+ description *** Servidor DNS/HTTP - VLAN 10 ***
+ switchport mode access
+ switchport access vlan 10
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+ exit
+
+! Servidor Syslog (VLAN 90)
+interface FastEthernet0/2
+ description *** Servidor Syslog - VLAN 90 ***
+ switchport mode access
+ switchport access vlan 90
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+ exit
+
+! Servidor DHCP (VLAN 10)
+interface FastEthernet0/3
+ description *** Servidor DHCP - VLAN 10 ***
+ switchport mode access
+ switchport access vlan 10
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+ exit
+
+! ===== CONFIGURACIÓN DE SYSLOG =====
+logging on
+logging trap informational
+logging source-interface Vlan99
+logging host 10.0.2.20
+service timestamps log datetime msec
+service timestamps debug datetime msec
+
+! ===== CONFIGURACIÓN SNMP =====
+snmp-server community public RO
+snmp-server community private RW
+snmp-server location "Sede Central - Core Switch 1"
+snmp-server contact "Admin TI - admin@empresa.local"
+snmp-server enable traps
+snmp-server host 10.0.5.210 version 2c public
+
+! ===== GUARDAR CONFIGURACIÓN =====
+end
+write memory
+
+!============================================
+! FIN DE CONFIGURACIÓN SW-Core1-Central
+!============================================

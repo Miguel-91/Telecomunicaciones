@@ -1,0 +1,162 @@
+!============================================
+! SWITCH SUCURSAL A - Configuración Completa
+! Proyecto Telecomunicaciones
+!============================================
+
+enable
+configure terminal
+
+! ===== CONFIGURACIÓN BÁSICA =====
+hostname SW-SucursalA
+no ip domain-lookup
+service password-encryption
+
+! ===== SEGURIDAD - CONTRASEÑAS =====
+enable secret Cisco123!
+line console 0
+ password Console123
+ login
+ logging synchronous
+ exec-timeout 5 0
+ exit
+
+line vty 0 15
+ password VTY123
+ login
+ transport input ssh telnet
+ exec-timeout 10 0
+ exit
+
+! ===== BANNER =====
+banner motd #
+*************************************************
+* SW-SUCURSAL A - Regional Norte               *
+* Acceso Autorizado Solamente                  *
+*************************************************
+#
+
+! ===== DESACTIVAR CDP (SEGURIDAD) =====
+no cdp run
+
+! ===== CREAR VLANs =====
+vlan 10
+ name Administracion-SucA
+ exit
+vlan 20
+ name Finanzas-SucA
+ exit
+vlan 60
+ name Voz-SucA
+ exit
+vlan 80
+ name Corporativo-SucA
+ exit
+vlan 99
+ name Nativa-Admin
+ exit
+
+! ===== IP DE ADMINISTRACIÓN =====
+interface Vlan99
+ description *** Administracion del Switch ***
+ ip address 10.0.16.146 255.255.255.252
+ no shutdown
+ exit
+ip default-gateway 10.0.16.145
+
+! ===== CONFIGURAR SPANNING TREE =====
+spanning-tree mode rapid-pvst
+spanning-tree vlan 10,20,60,80,99 priority 24576
+spanning-tree portfast default
+spanning-tree portfast bpduguard default
+
+! ===== TRUNK HACIA ROUTER SUCURSAL A =====
+interface GigabitEthernet0/1
+ description *** Trunk a R-SucursalA ***
+ switchport mode trunk
+ switchport trunk native vlan 99
+ switchport trunk allowed vlan 10,20,60,80,99
+ no shutdown
+ exit
+
+! ===== PUERTOS PARA VLAN 10 - ADMINISTRACIÓN =====
+interface range FastEthernet0/1-5
+ description *** VLAN 10 - Administracion ***
+ switchport mode access
+ switchport access vlan 10
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+ exit
+
+! ===== PUERTOS PARA VLAN 20 - FINANZAS + VOZ =====
+interface range FastEthernet0/6-10
+ description *** VLAN 20 - Finanzas + Voz ***
+ switchport mode access
+ switchport access vlan 20
+ switchport voice vlan 60
+ switchport port-security
+ switchport port-security maximum 3
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ mls qos trust cos
+ no shutdown
+ exit
+
+! ===== PUERTOS PARA VLAN 80 - CORPORATIVO =====
+interface range FastEthernet0/11-15
+ description *** VLAN 80 - Corporativo ***
+ switchport mode access
+ switchport access vlan 80
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+ exit
+
+! ===== ACCESS POINT PARA WiFi (VLAN 80) =====
+interface FastEthernet0/20
+ description *** Access Point WiFi - VLAN 80 ***
+ switchport mode access
+ switchport access vlan 80
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security violation shutdown
+ switchport port-security mac-address sticky
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+ exit
+
+! ===== CONFIGURACIÓN QoS PARA VOZ =====
+mls qos
+mls qos map cos-dscp 0 8 16 24 32 46 48 56
+
+! ===== CONFIGURACIÓN DE SYSLOG =====
+logging on
+logging trap informational
+logging source-interface Vlan99
+logging host 10.0.2.20
+service timestamps log datetime msec
+service timestamps debug datetime msec
+
+! ===== CONFIGURACIÓN SNMP =====
+snmp-server community public RO
+snmp-server location "Sucursal A - Regional Norte"
+snmp-server contact "Admin Suc A - admin-suca@empresa.local"
+
+! ===== GUARDAR CONFIGURACIÓN =====
+end
+write memory
+
+!============================================
+! FIN DE CONFIGURACIÓN SW-SucursalA
+!============================================

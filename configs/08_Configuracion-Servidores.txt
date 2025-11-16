@@ -1,0 +1,281 @@
+!============================================
+! CONFIGURACIÓN DE SERVIDORES
+! Proyecto Telecomunicaciones
+!============================================
+
+========================================
+SERVIDOR 1: DNS + HTTP/HTTPS + DHCP
+========================================
+Ubicación: Sede Central, VLAN 10
+IP: 10.0.2.10/23
+Gateway: 10.0.1.1
+DNS: 127.0.0.1
+
+--- Configuración DNS ---
+1. Habilitar servicio DNS
+2. Agregar registros A:
+   - empresa.local -> 10.0.2.10
+   - www.empresa.local -> 10.0.2.10
+   - intranet.empresa.local -> 10.0.2.10
+   - mail.empresa.local -> 10.0.2.10
+   - syslog.empresa.local -> 10.0.2.20
+   - central.empresa.local -> 10.0.1.254
+   - sucursal-a.empresa.local -> 10.0.16.14
+   - sucursal-b.empresa.local -> 10.0.32.126
+
+3. Agregar registros AAAA (IPv6):
+   - empresa.local -> 2001:db8:acad:10::10
+   - www.empresa.local -> 2001:db8:acad:10::10
+
+--- Configuración HTTP/HTTPS ---
+1. Habilitar servicio HTTP
+2. Habilitar servicio HTTPS
+3. Crear página web básica:
+   Título: "Portal Intranet - Empresa"
+   Contenido:
+   <html>
+   <head><title>Intranet Corporativa</title></head>
+   <body>
+   <h1>Bienvenido a la Intranet Corporativa</h1>
+   <h2>Red Empresarial Multisede</h2>
+   <p>Sede Central conectada a:</p>
+   <ul>
+     <li>Sucursal A - Regional Norte</li>
+     <li>Sucursal B - Regional Sur</li>
+   </ul>
+   <p>Servicios disponibles:</p>
+   <ul>
+     <li>DNS: 10.0.2.10</li>
+     <li>DHCP: Automático por VLAN</li>
+     <li>Syslog: 10.0.2.20</li>
+   </ul>
+   </body>
+   </html>
+
+--- Configuración DHCP (Alternativa si no se usa router) ---
+Si el router no provee DHCP, configurar pools en servidor:
+
+Pool VLAN 10:
+- Rango: 10.0.0.21 - 10.0.1.254
+- Gateway: 10.0.1.1
+- DNS: 10.0.2.10
+
+Pool VLAN 20:
+- Rango: 10.0.5.71 - 10.0.5.126
+- Gateway: 10.0.5.65
+- DNS: 10.0.2.10
+
+[Repetir para todas las VLANs según documento]
+
+
+========================================
+SERVIDOR 2: SYSLOG
+========================================
+Ubicación: Sede Central, VLAN 90
+IP: 10.0.2.20/29
+Gateway: 10.0.5.209
+DNS: 10.0.2.10
+
+--- Configuración Syslog ---
+1. Habilitar servicio Syslog
+2. Configurar recepción de logs en puerto UDP 514
+3. Configurar almacenamiento de logs
+4. Monitorear eventos desde:
+   - R-Central (1.1.1.1)
+   - R-SucursalA (2.2.2.2)
+   - R-SucursalB (3.3.3.3)
+   - SW-Core1-Central
+   - SW-Acceso1-Central
+   - SW-SucursalA
+   - SW-SucursalB
+
+--- Eventos a Capturar (mínimo 10 para informe) ---
+1. Interfaz GigabitEthernet down/up
+2. OSPF neighbor adjacency cambios
+3. Port Security violation
+4. Spanning Tree topology cambio
+5. HSRP state change
+6. Login exitoso/fallido
+7. Configuración guardada
+8. ACL denied packet
+9. EtherChannel bundle cambios
+10. DHCP binding events
+
+
+========================================
+SERVIDOR 3: SNMP (OPCIONAL)
+========================================
+Ubicación: Sede Central, VLAN 90
+IP: 10.0.5.210/29
+Gateway: 10.0.5.209
+DNS: 10.0.2.10
+
+--- Configuración SNMP Manager ---
+1. Habilitar servicio SNMP
+2. Community strings:
+   - RO: public
+   - RW: private
+3. Versión: SNMPv2c
+4. Monitorear dispositivos:
+   - Routers: 1.1.1.1, 2.2.2.2, 3.3.3.3
+   - Switches: todas las IPs de gestión VLAN 99
+
+
+========================================
+SERVIDOR 4: TFTP/FTP (OPCIONAL)
+========================================
+Ubicación: Sede Central, VLAN 10
+IP: 10.0.2.30/23
+Gateway: 10.0.1.1
+DNS: 10.0.2.10
+
+--- Configuración TFTP ---
+1. Habilitar servicio TFTP
+2. Crear carpeta compartida: /configs
+3. Permisos: Lectura y Escritura
+4. Usar para:
+   - Backup de configuraciones
+   - Actualizaciones de IOS (simulado)
+
+--- Configuración FTP ---
+1. Habilitar servicio FTP
+2. Usuario: admin / Contraseña: Cisco123
+3. Carpeta compartida: /files
+4. Permisos: Lectura y Escritura
+
+
+========================================
+CONFIGURACIÓN DE TELÉFONOS IP
+========================================
+
+--- CallManager Express (En Router Central) ---
+Si Packet Tracer soporta CME, agregar en R-Central:
+
+telephony-service
+ max-ephones 50
+ max-dn 50
+ ip source-address 10.0.5.5 port 2000
+ auto assign 1 to 50
+ create cnf-files
+ exit
+
+ephone-dn 1
+ number 1001
+ name Telefono-Central-1
+ exit
+
+ephone-dn 2
+ number 1002
+ name Telefono-Central-2
+ exit
+
+ephone-dn 3
+ number 2001
+ name Telefono-SucA-1
+ exit
+
+ephone-dn 4
+ number 2002
+ name Telefono-SucA-2
+ exit
+
+ephone-dn 5
+ number 3001
+ name Telefono-SucB-1
+ exit
+
+ephone-dn 6
+ number 3002
+ name Telefono-SucB-2
+ exit
+
+--- Configuración en Teléfonos IP ---
+Ubicar teléfonos en puertos configurados con:
+  switchport voice vlan 80 (Central)
+  switchport voice vlan 60 (Sucursal A)
+  switchport voice vlan 40 (Sucursal B - si aplica)
+
+DHCP automático debe asignar:
+- IP de VLAN de voz
+- TFTP server (Option 150): 10.0.5.5
+- Número de extensión automático
+
+PRUEBA: Realizar llamada entre:
+- 1001 (Central) -> 2001 (Suc A)
+- 1001 (Central) -> 3001 (Suc B)
+
+
+========================================
+CONFIGURACIÓN ACCESS POINTS WiFi
+========================================
+
+--- AP 1: Sede Central (VLAN 80) ---
+SSID: Corporativo-Central
+Seguridad: WPA2-PSK
+Contraseña: Empresa2024!
+VLAN: 80
+IP: DHCP automático de VLAN 80
+Puerto Switch: Configurado en access VLAN 80
+
+
+--- AP 2: Sucursal A (VLAN 80) ---
+SSID: Corporativo-SucA
+Seguridad: WPA2-PSK
+Contraseña: Empresa2024!
+VLAN: 80
+IP: DHCP automático de VLAN 80
+Puerto Switch: FastEthernet0/20
+
+
+--- AP 3: Sucursal B - WiFi Invitados (VLAN 70 - AISLADA) ---
+SSID: Invitados
+Seguridad: WPA2-PSK (o abierto)
+Contraseña: Invitados2024 (o sin contraseña)
+VLAN: 70
+IP: DHCP automático de VLAN 70
+Puerto Switch: FastEthernet0/23
+IMPORTANTE:
+  - Solo acceso a internet
+  - Bloqueada de red interna por ACL
+  - DNS público (8.8.8.8, 8.8.4.4)
+
+
+--- AP 4: Sucursal B - WiFi Corporativo (VLAN 80) ---
+SSID: Corporativo-SucB
+Seguridad: WPA2-PSK
+Contraseña: Empresa2024!
+VLAN: 80
+IP: DHCP automático de VLAN 80
+Puerto Switch: FastEthernet0/24
+
+
+========================================
+CONFIGURACIÓN IMPRESORAS
+========================================
+
+--- Impresora Central (VLAN 60) ---
+Ubicación: Sede Central
+IP: 10.0.5.180/28
+Gateway: 10.0.5.177
+Nombre: IMP-Central-01
+Puerto Switch: FastEthernet0/22-24 (SW-Acceso1)
+Accesible desde: VLANs 10, 20, 30, 40 (controlado por ACL)
+
+
+--- Impresora Sucursal A (VLAN 80) ---
+Ubicación: Sucursal A
+IP: 10.0.16.135/28
+Gateway: 10.0.16.129
+Nombre: IMP-SucA-01
+
+
+--- Impresora Sucursal B (VLAN 80) ---
+Ubicación: Sucursal B
+IP: 10.0.33.40/28
+Gateway: 10.0.33.33
+Nombre: IMP-SucB-01
+
+
+========================================
+FIN CONFIGURACIÓN DE SERVIDORES
+========================================

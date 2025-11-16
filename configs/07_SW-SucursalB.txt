@@ -1,0 +1,176 @@
+!============================================
+! SWITCH SUCURSAL B - Configuración Completa
+! Proyecto Telecomunicaciones
+!============================================
+
+enable
+configure terminal
+
+! ===== CONFIGURACIÓN BÁSICA =====
+hostname SW-SucursalB
+no ip domain-lookup
+service password-encryption
+
+! ===== SEGURIDAD - CONTRASEÑAS =====
+enable secret Cisco123!
+line console 0
+ password Console123
+ login
+ logging synchronous
+ exec-timeout 5 0
+ exit
+
+line vty 0 15
+ password VTY123
+ login
+ transport input ssh telnet
+ exec-timeout 10 0
+ exit
+
+! ===== BANNER =====
+banner motd #
+*************************************************
+* SW-SUCURSAL B - Regional Sur                 *
+* Acceso Autorizado Solamente                  *
+*************************************************
+#
+
+! ===== DESACTIVAR CDP (SEGURIDAD) =====
+no cdp run
+
+! ===== CREAR VLANs =====
+vlan 30
+ name Soporte-Tecnico-SucB
+ exit
+vlan 40
+ name Desarrollo-IT-SucB
+ exit
+vlan 70
+ name Invitados-WiFi-AISLADA
+ exit
+vlan 80
+ name Corporativo-SucB
+ exit
+vlan 99
+ name Nativa-Admin
+ exit
+
+! ===== IP DE ADMINISTRACIÓN =====
+interface Vlan99
+ description *** Administracion del Switch ***
+ ip address 10.0.33.50 255.255.255.252
+ no shutdown
+ exit
+ip default-gateway 10.0.33.49
+
+! ===== CONFIGURAR SPANNING TREE =====
+spanning-tree mode rapid-pvst
+spanning-tree vlan 30,40,70,80,99 priority 24576
+spanning-tree portfast default
+spanning-tree portfast bpduguard default
+
+! ===== TRUNK HACIA ROUTER SUCURSAL B =====
+interface GigabitEthernet0/1
+ description *** Trunk a R-SucursalB ***
+ switchport mode trunk
+ switchport trunk native vlan 99
+ switchport trunk allowed vlan 30,40,70,80,99
+ no shutdown
+ exit
+
+! ===== PUERTOS PARA VLAN 40 - DESARROLLO IT =====
+interface range FastEthernet0/1-12
+ description *** VLAN 40 - Desarrollo IT ***
+ switchport mode access
+ switchport access vlan 40
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+ exit
+
+! ===== PUERTOS PARA VLAN 30 - SOPORTE TÉCNICO =====
+interface range FastEthernet0/13-18
+ description *** VLAN 30 - Soporte Tecnico ***
+ switchport mode access
+ switchport access vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+ exit
+
+! ===== PUERTOS PARA VLAN 80 - CORPORATIVO =====
+interface range FastEthernet0/19-22
+ description *** VLAN 80 - Corporativo ***
+ switchport mode access
+ switchport access vlan 80
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+ exit
+
+! ===== ACCESS POINT PARA WiFi INVITADOS (VLAN 70 - AISLADA) =====
+interface FastEthernet0/23
+ description *** AP WiFi INVITADOS - VLAN 70 AISLADA ***
+ switchport mode access
+ switchport access vlan 70
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security violation shutdown
+ switchport port-security mac-address sticky
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+ exit
+
+! ===== ACCESS POINT PARA WiFi CORPORATIVO (VLAN 80) =====
+interface FastEthernet0/24
+ description *** AP WiFi Corporativo - VLAN 80 ***
+ switchport mode access
+ switchport access vlan 80
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security violation shutdown
+ switchport port-security mac-address sticky
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+ exit
+
+! ===== CONFIGURACIÓN PVLAN (AISLAMIENTO ADICIONAL VLAN 70) =====
+! Aislar puertos de VLAN 70 entre sí (Protected Ports)
+interface FastEthernet0/23
+ switchport protected
+ exit
+
+! ===== CONFIGURACIÓN DE SYSLOG =====
+logging on
+logging trap informational
+logging source-interface Vlan99
+logging host 10.0.2.20
+service timestamps log datetime msec
+service timestamps debug datetime msec
+
+! ===== CONFIGURACIÓN SNMP =====
+snmp-server community public RO
+snmp-server location "Sucursal B - Regional Sur"
+snmp-server contact "Admin Suc B - admin-sucb@empresa.local"
+
+! ===== GUARDAR CONFIGURACIÓN =====
+end
+write memory
+
+!============================================
+! FIN DE CONFIGURACIÓN SW-SucursalB
+!============================================

@@ -1,0 +1,222 @@
+!============================================
+! ROUTER SUCURSAL B - Configuración Completa
+! Proyecto Telecomunicaciones - Sucursal B
+!============================================
+
+enable
+configure terminal
+
+! ===== CONFIGURACIÓN BÁSICA =====
+hostname R-SucursalB
+no ip domain-lookup
+service password-encryption
+
+! ===== SEGURIDAD - CONTRASEÑAS =====
+enable secret Cisco123!
+line console 0
+ password Console123
+ login
+ logging synchronous
+ exec-timeout 5 0
+ exit
+
+line vty 0 15
+ password VTY123
+ login
+ transport input ssh telnet
+ exec-timeout 10 0
+ exit
+
+! ===== BANNER =====
+banner motd #
+*************************************************
+* ROUTER SUCURSAL B - Oficina Regional Sur     *
+* Acceso Autorizado Solamente                  *
+* Todas las actividades son monitoreadas       *
+* Proyecto: Red Empresarial Multisede          *
+*************************************************
+#
+
+! ===== DESACTIVAR CDP (SEGURIDAD) =====
+no cdp run
+
+! ===== INTERFACES Y SUB-INTERFACES PARA VLANs =====
+
+! Interface hacia Switch Sucursal B (802.1Q Trunking)
+interface GigabitEthernet0/0
+ description *** Enlace Troncal a SW-SucB ***
+ no shutdown
+ exit
+
+! VLAN 40 - Desarrollo IT Suc. B (100 hosts)
+interface GigabitEthernet0/0.40
+ description *** VLAN 40 - Desarrollo IT Suc B ***
+ encapsulation dot1Q 40
+ ip address 10.0.32.126 255.255.255.128
+ ipv6 address 2001:db8:acad:B040::1/64
+ ip helper-address 10.0.32.5
+ no shutdown
+ exit
+
+! VLAN 70 - Invitados WiFi Suc. B (80 hosts) - AISLADA
+interface GigabitEthernet0/0.70
+ description *** VLAN 70 - Invitados WiFi (AISLADA) ***
+ encapsulation dot1Q 70
+ ip address 10.0.32.254 255.255.255.128
+ ipv6 address 2001:db8:acad:B070::1/64
+ ip helper-address 10.0.32.5
+ no shutdown
+ exit
+
+! VLAN 30 - Soporte Técnico Suc. B (30 hosts)
+interface GigabitEthernet0/0.30
+ description *** VLAN 30 - Soporte Tecnico Suc B ***
+ encapsulation dot1Q 30
+ ip address 10.0.33.30 255.255.255.224
+ ipv6 address 2001:db8:acad:B030::1/64
+ ip helper-address 10.0.32.5
+ no shutdown
+ exit
+
+! VLAN 80 - Corporativo Suc. B (12 hosts)
+interface GigabitEthernet0/0.80
+ description *** VLAN 80 - Corporativo Suc B ***
+ encapsulation dot1Q 80
+ ip address 10.0.33.46 255.255.255.240
+ ipv6 address 2001:db8:acad:B080::1/64
+ ip helper-address 10.0.32.5
+ no shutdown
+ exit
+
+! VLAN 99 - Nativa/Administración
+interface GigabitEthernet0/0.99
+ description *** VLAN 99 - Nativa ***
+ encapsulation dot1Q 99 native
+ ip address 10.0.33.49 255.255.255.252
+ no shutdown
+ exit
+
+! ===== ENLACE WAN A SEDE CENTRAL (Serial) =====
+interface Serial0/0/0
+ description *** Enlace WAN a Sede Central ***
+ ip address 10.255.2.2 255.255.255.252
+ ipv6 address 2001:db8:acad:FFA2::2/64
+ no shutdown
+ exit
+
+! ===== CONFIGURACIÓN DE OSPF =====
+router ospf 1
+ router-id 3.3.3.3
+ log-adjacency-changes
+ passive-interface GigabitEthernet0/0
+ network 10.0.32.0 0.0.1.255 area 0
+ network 10.255.2.0 0.0.0.3 area 0
+ exit
+
+! ===== CONFIGURACIÓN DE OSPFv3 PARA IPv6 =====
+ipv6 unicast-routing
+ipv6 router ospf 1
+ router-id 3.3.3.3
+ log-adjacency-changes
+ exit
+
+interface Serial0/0/0
+ ipv6 ospf 1 area 0
+ exit
+
+! ===== CONFIGURACIÓN DHCP POR VLAN =====
+
+! DHCP para VLAN 40 - Desarrollo IT
+ip dhcp excluded-address 10.0.32.1 10.0.32.10
+ip dhcp pool VLAN40-Dev-SucB
+ network 10.0.32.0 255.255.255.128
+ default-router 10.0.32.1
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+! DHCP para VLAN 70 - Invitados WiFi (AISLADA)
+ip dhcp excluded-address 10.0.32.128 10.0.32.140
+ip dhcp pool VLAN70-WiFi-Invitados
+ network 10.0.32.128 255.255.255.128
+ default-router 10.0.32.129
+ dns-server 8.8.8.8 8.8.4.4
+ domain-name invitados.local
+ lease 0 4
+ exit
+
+! DHCP para VLAN 30 - Soporte Técnico
+ip dhcp excluded-address 10.0.33.1 10.0.33.5
+ip dhcp pool VLAN30-Soporte-SucB
+ network 10.0.33.0 255.255.255.224
+ default-router 10.0.33.1
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+! DHCP para VLAN 80 - Corporativo
+ip dhcp excluded-address 10.0.33.32 10.0.33.37
+ip dhcp pool VLAN80-Corp-SucB
+ network 10.0.33.32 255.255.255.240
+ default-router 10.0.33.33
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+! ===== LISTAS DE ACCESO (ACLs) - SEGURIDAD =====
+
+! ACL para AISLAR VLAN 70 (Invitados WiFi) de red interna
+ip access-list extended BLOQUEAR-INVITADOS-WIFI
+ remark *** Aislar invitados de red corporativa ***
+ ! Permitir DHCP
+ permit udp any eq 68 any eq 67
+ permit udp any eq 67 any eq 68
+ ! Permitir DNS
+ permit udp 10.0.32.128 0.0.0.127 any eq 53
+ ! Permitir HTTP y HTTPS
+ permit tcp 10.0.32.128 0.0.0.127 any eq 80
+ permit tcp 10.0.32.128 0.0.0.127 any eq 443
+ ! Permitir ICMP solo a internet
+ permit icmp 10.0.32.128 0.0.0.127 host 8.8.8.8 echo
+ permit icmp 10.0.32.128 0.0.0.127 host 8.8.4.4 echo
+ ! DENEGAR acceso a TODAS las redes internas
+ deny ip 10.0.32.128 0.0.0.127 10.0.0.0 0.255.255.255
+ deny ip 10.0.32.128 0.0.0.127 192.168.0.0 0.0.255.255
+ deny ip 10.0.32.128 0.0.0.127 172.16.0.0 0.15.255.255
+ ! Permitir todo lo demás (internet)
+ permit ip 10.0.32.128 0.0.0.127 any
+ exit
+
+! Aplicar ACL a VLAN 70
+interface GigabitEthernet0/0.70
+ ip access-group BLOQUEAR-INVITADOS-WIFI in
+ exit
+
+! ===== CONFIGURACIÓN DE SYSLOG =====
+logging on
+logging trap informational
+logging facility local0
+logging source-interface GigabitEthernet0/0.99
+logging host 10.0.2.20
+service timestamps log datetime msec
+service timestamps debug datetime msec
+
+! ===== CONFIGURACIÓN SNMP (OPCIONAL) =====
+snmp-server community public RO
+snmp-server community private RW
+snmp-server location "Sucursal B - Regional Sur"
+snmp-server contact "Admin Suc B - admin-sucb@empresa.local"
+snmp-server enable traps
+snmp-server host 10.0.5.210 version 2c public
+
+! ===== RUTAS ESTÁTICAS PARA REDUNDANCIA (OPCIONAL) =====
+! Ruta de respaldo en caso de fallo OSPF
+ip route 10.0.0.0 255.0.0.0 10.255.2.1 200
+
+! ===== GUARDAR CONFIGURACIÓN =====
+end
+write memory
+
+!============================================
+! FIN DE CONFIGURACIÓN R-SucursalB
+!============================================
