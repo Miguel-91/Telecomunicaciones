@@ -1,0 +1,141 @@
+# CÓMO DESCARGAR LOS ARCHIVOS DEL PROYECTO
+
+## OPCIÓN 1: Descargar desde GitHub (Recomendado)
+
+### Método A: Descargar ZIP completo del repositorio
+
+1. Ve a tu repositorio: `https://github.com/Miguel-91/Telecomunicaciones`
+2. Click en el botón verde **"Code"**
+3. Click en **"Download ZIP"**
+4. Descomprimir el archivo
+
+### Método B: Descargar rama específica con las configuraciones
+
+1. Ve a: `https://github.com/Miguel-91/Telecomunicaciones/tree/claude/setup-repository-01FqkTXKtKd33ti6gQ5BeuMU`
+2. Click en **"Code"** → **"Download ZIP"**
+3. Descomprimir
+
+### Método C: Clonar el repositorio (si tienes Git instalado)
+
+```bash
+git clone https://github.com/Miguel-91/Telecomunicaciones.git
+cd Telecomunicaciones
+git checkout claude/setup-repository-01FqkTXKtKd33ti6gQ5BeuMU
+```
+
+---
+
+## OPCIÓN 2: Descargar archivos individuales
+
+Si solo quieres las configuraciones limpias, descarga estos archivos uno por uno desde GitHub:
+
+### Archivos principales:
+```
+https://github.com/Miguel-91/Telecomunicaciones/blob/claude/setup-repository-01FqkTXKtKd33ti6gQ5BeuMU/LEER_PRIMERO.txt
+https://github.com/Miguel-91/Telecomunicaciones/blob/claude/setup-repository-01FqkTXKtKd33ti6gQ5BeuMU/CONSTRUIR_PKT.md
+https://github.com/Miguel-91/Telecomunicaciones/blob/claude/setup-repository-01FqkTXKtKd33ti6gQ5BeuMU/README_ESTUDIANTE.md
+```
+
+### Configuraciones (carpeta configs_limpias/):
+```
+01_R-Central.txt
+02_R-SucursalA.txt
+03_R-SucursalB.txt
+04_SW-Core1-Central.txt
+05_SW-Acceso1-Central.txt
+06_SW-SucursalA.txt
+07_SW-SucursalB.txt
+08_Configuracion-Servidores-Dispositivos.txt
+```
+
+---
+
+## OPCIÓN 3: Desde la línea de comandos (si tienes acceso)
+
+Si tienes acceso al servidor donde están los archivos:
+
+```bash
+# Ir al directorio
+cd /home/user/Telecomunicaciones
+
+# Copiar solo lo necesario a tu directorio local
+cp -r configs_limpias/ /tu/directorio/destino/
+cp LEER_PRIMERO.txt /tu/directorio/destino/
+cp CONSTRUIR_PKT.md /tu/directorio/destino/
+cp README_ESTUDIANTE.md /tu/directorio/destino/
+cp "CLASE DE RED.pdf" /tu/directorio/destino/
+cp "Proyecto_Telecomunicaciones (2).pdf" /tu/directorio/destino/
+```
+
+---
+
+## LO QUE CONTIENE LA DESCARGA
+
+```
+Proyecto_Telecomunicaciones/
+├── LEER_PRIMERO.txt                    ← Empieza aquí
+├── CONSTRUIR_PKT.md                    ← Guía paso a paso
+├── README_ESTUDIANTE.md                ← Documentación
+│
+├── configs_limpias/                    ← Configuraciones limpias
+│   ├── 01_R-Central.txt
+│   ├── 02_R-SucursalA.txt
+│   ├── 03_R-SucursalB.txt
+│   ├── 04_SW-Core1-Central.txt
+│   ├── 05_SW-Acceso1-Central.txt
+│   ├── 06_SW-SucursalA.txt
+│   ├── 07_SW-SucursalB.txt
+│   └── 08_Configuracion-Servidores-Dispositivos.txt
+│
+├── CLASE DE RED.pdf                    ← Tu subnetting
+└── Proyecto_Telecomunicaciones (2).pdf ← Requisitos
+```
+
+---
+
+## DESPUÉS DE DESCARGAR
+
+1. **Descomprime** el archivo ZIP (si descargaste ZIP)
+2. **Abre** el archivo `LEER_PRIMERO.txt`
+3. **Lee** el archivo `CONSTRUIR_PKT.md`
+4. **Abre** Cisco Packet Tracer
+5. **Sigue** la guía paso a paso
+
+---
+
+## VERIFICAR DESCARGA
+
+Asegúrate de tener estos archivos:
+
+✅ LEER_PRIMERO.txt (3.2 KB)
+✅ CONSTRUIR_PKT.md (9.9 KB)
+✅ README_ESTUDIANTE.md (3.9 KB)
+✅ configs_limpias/ (carpeta con 8 archivos .txt)
+✅ CLASE DE RED.pdf (129 KB)
+✅ Proyecto_Telecomunicaciones (2).pdf (3.8 MB)
+
+**Total**: ~4 MB aproximadamente
+
+---
+
+## ¿PROBLEMAS PARA DESCARGAR?
+
+Si tienes problemas:
+
+1. **Acceso denegado**: Asegúrate de tener acceso al repositorio
+2. **Rama no encontrada**: Usa la rama principal o descarga todo el repo
+3. **Archivos corruptos**: Vuelve a descargar
+4. **No tienes Git**: Usa la opción de Download ZIP desde GitHub
+
+---
+
+## SIGUIENTE PASO
+
+Una vez descargado:
+→ Abre **LEER_PRIMERO.txt**
+→ Sigue las instrucciones
+→ Construye tu archivo .pkt en Packet Tracer
+
+---
+
+¡Listo para descargar y empezar!
