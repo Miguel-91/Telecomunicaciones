@@ -1,0 +1,169 @@
+enable
+configure terminal
+
+hostname R-SucursalB
+no ip domain-lookup
+service password-encryption
+
+enable secret Cisco123!
+line console 0
+ password Console123
+ login
+ logging synchronous
+ exec-timeout 5 0
+ exit
+
+line vty 0 15
+ password VTY123
+ login
+ transport input ssh telnet
+ exec-timeout 10 0
+ exit
+
+banner motd #
+*********************************************
+* ROUTER SUCURSAL B - Oficina Regional     *
+* Acceso Autorizado Solamente              *
+*********************************************
+#
+
+no cdp run
+
+interface GigabitEthernet0/0
+ description Enlace Troncal a SW-SucB
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.40
+ description VLAN 40 - Desarrollo IT
+ encapsulation dot1Q 40
+ ip address 10.0.32.126 255.255.255.128
+ ipv6 address 2001:db8:acad:B040::1/64
+ ip helper-address 10.0.32.5
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.70
+ description VLAN 70 - Invitados WiFi AISLADA
+ encapsulation dot1Q 70
+ ip address 10.0.32.254 255.255.255.128
+ ipv6 address 2001:db8:acad:B070::1/64
+ ip helper-address 10.0.32.5
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.30
+ description VLAN 30 - Soporte Tecnico
+ encapsulation dot1Q 30
+ ip address 10.0.33.30 255.255.255.224
+ ipv6 address 2001:db8:acad:B030::1/64
+ ip helper-address 10.0.32.5
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.80
+ description VLAN 80 - Corporativo
+ encapsulation dot1Q 80
+ ip address 10.0.33.46 255.255.255.240
+ ipv6 address 2001:db8:acad:B080::1/64
+ ip helper-address 10.0.32.5
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.99
+ description VLAN 99 - Nativa
+ encapsulation dot1Q 99 native
+ ip address 10.0.33.49 255.255.255.252
+ no shutdown
+ exit
+
+interface Serial0/0/0
+ description Enlace WAN a Sede Central
+ ip address 10.255.2.2 255.255.255.252
+ ipv6 address 2001:db8:acad:FFA2::2/64
+ no shutdown
+ exit
+
+router ospf 1
+ router-id 3.3.3.3
+ log-adjacency-changes
+ passive-interface GigabitEthernet0/0
+ network 10.0.32.0 0.0.1.255 area 0
+ network 10.255.2.0 0.0.0.3 area 0
+ exit
+
+ipv6 unicast-routing
+ipv6 router ospf 1
+ router-id 3.3.3.3
+ log-adjacency-changes
+ exit
+
+interface Serial0/0/0
+ ipv6 ospf 1 area 0
+ exit
+
+ip dhcp excluded-address 10.0.32.1 10.0.32.10
+ip dhcp pool VLAN40-Dev
+ network 10.0.32.0 255.255.255.128
+ default-router 10.0.32.1
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+ip dhcp excluded-address 10.0.32.128 10.0.32.140
+ip dhcp pool VLAN70-WiFi-Invitados
+ network 10.0.32.128 255.255.255.128
+ default-router 10.0.32.129
+ dns-server 8.8.8.8 8.8.4.4
+ domain-name invitados.local
+ lease 0 4
+ exit
+
+ip dhcp excluded-address 10.0.33.1 10.0.33.5
+ip dhcp pool VLAN30-Soporte
+ network 10.0.33.0 255.255.255.224
+ default-router 10.0.33.1
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+ip dhcp excluded-address 10.0.33.32 10.0.33.37
+ip dhcp pool VLAN80-Corp
+ network 10.0.33.32 255.255.255.240
+ default-router 10.0.33.33
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+ip access-list extended BLOQUEAR-INVITADOS-WIFI
+ remark Aislar invitados de red corporativa
+ permit udp any eq 68 any eq 67
+ permit udp any eq 67 any eq 68
+ permit udp 10.0.32.128 0.0.0.127 any eq 53
+ permit tcp 10.0.32.128 0.0.0.127 any eq 80
+ permit tcp 10.0.32.128 0.0.0.127 any eq 443
+ permit icmp 10.0.32.128 0.0.0.127 host 8.8.8.8 echo
+ permit icmp 10.0.32.128 0.0.0.127 host 8.8.4.4 echo
+ deny ip 10.0.32.128 0.0.0.127 10.0.0.0 0.255.255.255
+ deny ip 10.0.32.128 0.0.0.127 192.168.0.0 0.0.255.255
+ deny ip 10.0.32.128 0.0.0.127 172.16.0.0 0.15.255.255
+ permit ip 10.0.32.128 0.0.0.127 any
+ exit
+
+interface GigabitEthernet0/0.70
+ ip access-group BLOQUEAR-INVITADOS-WIFI in
+ exit
+
+logging on
+logging trap informational
+logging host 10.0.2.20
+service timestamps log datetime msec
+
+snmp-server community public RO
+snmp-server location "Sucursal B"
+snmp-server contact "Admin Suc B"
+
+ip route 10.0.0.0 255.0.0.0 10.255.2.1 200
+
+end
+write memory

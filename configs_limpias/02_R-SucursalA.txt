@@ -1,0 +1,150 @@
+enable
+configure terminal
+
+hostname R-SucursalA
+no ip domain-lookup
+service password-encryption
+
+enable secret Cisco123!
+line console 0
+ password Console123
+ login
+ logging synchronous
+ exec-timeout 5 0
+ exit
+
+line vty 0 15
+ password VTY123
+ login
+ transport input ssh telnet
+ exec-timeout 10 0
+ exit
+
+banner motd #
+*********************************************
+* ROUTER SUCURSAL A - Oficina Regional     *
+* Acceso Autorizado Solamente              *
+*********************************************
+#
+
+no cdp run
+
+interface GigabitEthernet0/0
+ description Enlace Troncal a SW-SucA
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.10
+ description VLAN 10 - Administracion
+ encapsulation dot1Q 10
+ ip address 10.0.16.14 255.255.255.240
+ ipv6 address 2001:db8:acad:A010::1/64
+ ip helper-address 10.0.16.5
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.20
+ description VLAN 20 - Finanzas
+ encapsulation dot1Q 20
+ ip address 10.0.16.94 255.255.255.224
+ ipv6 address 2001:db8:acad:A020::1/64
+ ip helper-address 10.0.16.5
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.60
+ description VLAN 60 - Telefonia IP
+ encapsulation dot1Q 60
+ ip address 10.0.16.126 255.255.255.224
+ ipv6 address 2001:db8:acad:A060::1/64
+ ip helper-address 10.0.16.5
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.80
+ description VLAN 80 - Corporativo
+ encapsulation dot1Q 80
+ ip address 10.0.16.142 255.255.255.240
+ ipv6 address 2001:db8:acad:A080::1/64
+ ip helper-address 10.0.16.5
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.99
+ description VLAN 99 - Nativa
+ encapsulation dot1Q 99 native
+ ip address 10.0.16.145 255.255.255.252
+ no shutdown
+ exit
+
+interface GigabitEthernet0/1
+ description Enlace WAN a Sede Central
+ ip address 10.255.1.2 255.255.255.252
+ ipv6 address 2001:db8:acad:FFA1::2/64
+ no shutdown
+ exit
+
+router ospf 1
+ router-id 2.2.2.2
+ log-adjacency-changes
+ passive-interface GigabitEthernet0/0
+ network 10.0.16.0 0.0.0.255 area 0
+ network 10.255.1.0 0.0.0.3 area 0
+ exit
+
+ipv6 unicast-routing
+ipv6 router ospf 1
+ router-id 2.2.2.2
+ log-adjacency-changes
+ exit
+
+interface GigabitEthernet0/1
+ ipv6 ospf 1 area 0
+ exit
+
+ip dhcp excluded-address 10.0.16.1 10.0.16.5
+ip dhcp pool VLAN10-Admin
+ network 10.0.16.0 255.255.255.240
+ default-router 10.0.16.1
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+ip dhcp excluded-address 10.0.16.64 10.0.16.70
+ip dhcp pool VLAN20-Finanzas
+ network 10.0.16.64 255.255.255.224
+ default-router 10.0.16.65
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+ip dhcp excluded-address 10.0.16.96 10.0.16.100
+ip dhcp pool VLAN60-VoIP
+ network 10.0.16.96 255.255.255.224
+ default-router 10.0.16.97
+ dns-server 10.0.2.10
+ option 150 ip 10.0.5.5
+ domain-name empresa.local
+ exit
+
+ip dhcp excluded-address 10.0.16.128 10.0.16.133
+ip dhcp pool VLAN80-Corp
+ network 10.0.16.128 255.255.255.240
+ default-router 10.0.16.129
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+logging on
+logging trap informational
+logging host 10.0.2.20
+service timestamps log datetime msec
+
+snmp-server community public RO
+snmp-server location "Sucursal A"
+snmp-server contact "Admin Suc A"
+
+ip route 10.0.0.0 255.0.0.0 10.255.1.1 200
+
+end
+write memory

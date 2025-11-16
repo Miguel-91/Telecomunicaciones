@@ -1,0 +1,110 @@
+========================================
+CONFIGURACIÓN DE SERVIDORES Y DISPOSITIVOS FINALES
+========================================
+
+SERVIDOR DNS/HTTP (10.0.2.10)
+==============================
+IP: 10.0.2.10
+Mask: 255.255.254.0
+Gateway: 10.0.1.1
+DNS: 10.0.2.10
+
+Services > DNS (ON):
+  www.empresa.local -> 10.0.2.10
+  empresa.local -> 10.0.2.10
+  intranet.empresa.local -> 10.0.2.10
+  syslog.empresa.local -> 10.0.2.20
+
+Services > HTTP (ON):
+  index.html:
+  <html>
+  <head><title>Intranet Corporativa</title></head>
+  <body>
+  <h1>Bienvenido a la Intranet</h1>
+  <p>Red Empresarial Multisede</p>
+  </body>
+  </html>
+
+Services > HTTPS (ON)
+
+
+SERVIDOR SYSLOG (10.0.2.20)
+============================
+IP: 10.0.2.20
+Mask: 255.255.255.248
+Gateway: 10.0.5.209
+DNS: 10.0.2.10
+
+Services > Syslog (ON)
+
+
+PCs - CONFIGURACIÓN
+===================
+Todos los PCs en DHCP:
+Desktop > IP Configuration > DHCP
+
+Verificar con:
+Desktop > Command Prompt > ipconfig
+
+
+TELÉFONOS IP
+============
+Conectar a puertos con voice VLAN configurada
+Configuración automática por DHCP
+Extensiones:
+  Central: 1001-1004
+  Suc A: 2001-2002
+  Suc B: 3001-3002
+
+
+ACCESS POINTS
+=============
+
+AP Sede Central:
+  SSID: Corporativo-Central
+  Authentication: WPA2-PSK
+  Password: Empresa2024!
+  IP: DHCP
+
+AP Sucursal A:
+  SSID: Corporativo-SucA
+  Authentication: WPA2-PSK
+  Password: Empresa2024!
+  IP: DHCP
+
+AP Sucursal B (Corporativo):
+  SSID: Corporativo-SucB
+  Authentication: WPA2-PSK
+  Password: Empresa2024!
+  IP: DHCP
+
+AP Sucursal B (Invitados):
+  SSID: Invitados
+  Authentication: Open o WPA2-PSK
+  Password: Invitados2024 (opcional)
+  IP: DHCP
+
+
+IMPRESORAS
+==========
+
+Impresora Central:
+  IP: 10.0.5.180
+  Mask: 255.255.255.240
+  Gateway: 10.0.5.177
+
+Impresora Suc A:
+  IP: 10.0.16.135
+  Mask: 255.255.255.240
+  Gateway: 10.0.16.129
+
+Impresora Suc B:
+  IP: 10.0.33.40
+  Mask: 255.255.255.240
+  Gateway: 10.0.33.33
+
+
+CLOUD (INTERNET)
+================
+Config > Ethernet 6:
+  Cable conectado a R-Central Gig0/2

@@ -1,0 +1,311 @@
+!============================================
+! ROUTER CENTRAL - Configuración Completa
+! Proyecto Telecomunicaciones - Sede Central
+!============================================
+
+enable
+configure terminal
+
+! ===== CONFIGURACIÓN BÁSICA =====
+hostname R-Central
+no ip domain-lookup
+service password-encryption
+
+! ===== SEGURIDAD - CONTRASEÑAS =====
+enable secret Cisco123!
+line console 0
+ password Console123
+ login
+ logging synchronous
+ exec-timeout 5 0
+ exit
+
+line vty 0 15
+ password VTY123
+ login
+ transport input ssh telnet
+ exec-timeout 10 0
+ exit
+
+! ===== BANNER =====
+banner motd #
+*************************************************
+* ROUTER CENTRAL - SEDE PRINCIPAL              *
+* Acceso Autorizado Solamente                  *
+* Todas las actividades son monitoreadas       *
+*************************************************
+#
+
+! ===== DESACTIVAR CDP (SEGURIDAD) =====
+no cdp run
+
+! ===== INTERFACES Y SUB-INTERFACES PARA VLANs =====
+
+interface GigabitEthernet0/0
+ description Enlace Troncal a SW-Core-1
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.10
+ description VLAN 10 - Corporativo
+ encapsulation dot1Q 10
+ ip address 10.0.1.254 255.255.254.0
+ ipv6 address 2001:db8:acad:0010::1/64
+ ip helper-address 10.0.2.10
+ standby 10 ip 10.0.1.1
+ standby 10 priority 110
+ standby 10 preempt
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.20
+ description VLAN 20 - Finanzas
+ encapsulation dot1Q 20
+ ip address 10.0.5.126 255.255.255.192
+ ipv6 address 2001:db8:acad:0020::1/64
+ ip helper-address 10.0.2.10
+ standby 20 ip 10.0.5.65
+ standby 20 priority 110
+ standby 20 preempt
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.30
+ description VLAN 30 - Soporte Tecnico
+ encapsulation dot1Q 30
+ ip address 10.0.5.158 255.255.255.224
+ ipv6 address 2001:db8:acad:0030::1/64
+ ip helper-address 10.0.2.10
+ standby 30 ip 10.0.5.129
+ standby 30 priority 110
+ standby 30 preempt
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.40
+ description VLAN 40 - Recursos Humanos
+ encapsulation dot1Q 40
+ ip address 10.0.5.174 255.255.255.240
+ ipv6 address 2001:db8:acad:0040::1/64
+ ip helper-address 10.0.2.10
+ standby 40 ip 10.0.5.161
+ standby 40 priority 110
+ standby 40 preempt
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.60
+ description VLAN 60 - Impresoras
+ encapsulation dot1Q 60
+ ip address 10.0.5.190 255.255.255.240
+ ipv6 address 2001:db8:acad:0060::1/64
+ ip helper-address 10.0.2.10
+ standby 60 ip 10.0.5.177
+ standby 60 priority 110
+ standby 60 preempt
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.80
+ description VLAN 80 - Telefonia IP
+ encapsulation dot1Q 80
+ ip address 10.0.5.62 255.255.255.192
+ ipv6 address 2001:db8:acad:0080::1/64
+ ip helper-address 10.0.2.10
+ standby 80 ip 10.0.5.1
+ standby 80 priority 110
+ standby 80 preempt
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.90
+ description VLAN 90 - Admin Remota
+ encapsulation dot1Q 90
+ ip address 10.0.5.214 255.255.255.248
+ ipv6 address 2001:db8:acad:0090::1/64
+ ip helper-address 10.0.2.10
+ standby 90 ip 10.0.5.209
+ standby 90 priority 110
+ standby 90 preempt
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0.99
+ description VLAN 99 - Nativa
+ encapsulation dot1Q 99 native
+ ip address 10.0.5.217 255.255.255.252
+ no shutdown
+ exit
+
+! ===== ENLACE WAN A SUCURSAL A =====
+interface GigabitEthernet0/1
+ description Enlace WAN a Sucursal A
+ ip address 10.255.1.1 255.255.255.252
+ ipv6 address 2001:db8:acad:FFA1::1/64
+ no shutdown
+ exit
+
+! ===== ENLACE WAN A SUCURSAL B =====
+interface Serial0/0/0
+ description Enlace WAN a Sucursal B
+ ip address 10.255.2.1 255.255.255.252
+ ipv6 address 2001:db8:acad:FFA2::1/64
+ clock rate 128000
+ no shutdown
+ exit
+
+! ===== ENLACE A INTERNET (NAT) =====
+interface GigabitEthernet0/2
+ description Conexion a Internet
+ ip address 200.1.1.2 255.255.255.252
+ ip nat outside
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0
+ ip nat inside
+ exit
+interface GigabitEthernet0/1
+ ip nat inside
+ exit
+interface Serial0/0/0
+ ip nat inside
+ exit
+
+! ===== CONFIGURACIÓN DE OSPF =====
+router ospf 1
+ router-id 1.1.1.1
+ log-adjacency-changes
+ passive-interface GigabitEthernet0/0
+ network 10.0.0.0 0.0.255.255 area 0
+ network 10.255.1.0 0.0.0.3 area 0
+ network 10.255.2.0 0.0.0.3 area 0
+ default-information originate
+ exit
+
+! ===== CONFIGURACIÓN DE OSPFv3 PARA IPv6 =====
+ipv6 unicast-routing
+ipv6 router ospf 1
+ router-id 1.1.1.1
+ log-adjacency-changes
+ default-information originate
+ exit
+
+interface GigabitEthernet0/1
+ ipv6 ospf 1 area 0
+ exit
+interface Serial0/0/0
+ ipv6 ospf 1 area 0
+ exit
+
+! ===== CONFIGURACIÓN NAT (PAT) =====
+access-list 1 permit 10.0.0.0 0.255.255.255
+ip nat inside source list 1 interface GigabitEthernet0/2 overload
+
+! ===== CONFIGURACIÓN DHCP POR VLAN =====
+
+ip dhcp excluded-address 10.0.0.1 10.0.0.20
+ip dhcp pool VLAN10-Corporativo
+ network 10.0.0.0 255.255.254.0
+ default-router 10.0.1.1
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+ip dhcp excluded-address 10.0.5.65 10.0.5.70
+ip dhcp pool VLAN20-Finanzas
+ network 10.0.5.64 255.255.255.192
+ default-router 10.0.5.65
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+ip dhcp excluded-address 10.0.5.129 10.0.5.135
+ip dhcp pool VLAN30-Soporte
+ network 10.0.5.128 255.255.255.224
+ default-router 10.0.5.129
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+ip dhcp excluded-address 10.0.5.161 10.0.5.165
+ip dhcp pool VLAN40-RRHH
+ network 10.0.5.160 255.255.255.240
+ default-router 10.0.5.161
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+ip dhcp excluded-address 10.0.5.177 10.0.5.180
+ip dhcp pool VLAN60-Impresoras
+ network 10.0.5.176 255.255.255.240
+ default-router 10.0.5.177
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+ip dhcp excluded-address 10.0.5.1 10.0.5.10
+ip dhcp pool VLAN80-VoIP
+ network 10.0.5.0 255.255.255.192
+ default-router 10.0.5.1
+ dns-server 10.0.2.10
+ option 150 ip 10.0.5.5
+ domain-name empresa.local
+ exit
+
+ip dhcp excluded-address 10.0.5.209 10.0.5.211
+ip dhcp pool VLAN90-Admin
+ network 10.0.5.208 255.255.255.248
+ default-router 10.0.5.209
+ dns-server 10.0.2.10
+ domain-name empresa.local
+ exit
+
+! ===== LISTAS DE ACCESO (ACLs) =====
+
+ip access-list extended BLOQUEAR-INVITADOS
+ remark Bloquear VLAN 70 Invitados de red interna
+ deny ip 10.0.32.128 0.0.0.127 10.0.0.0 0.0.255.255
+ permit tcp 10.0.32.128 0.0.0.127 any eq 80
+ permit tcp 10.0.32.128 0.0.0.127 any eq 443
+ permit udp 10.0.32.128 0.0.0.127 any eq 53
+ permit udp any eq 67 any eq 68
+ deny ip 10.0.32.128 0.0.0.127 any
+ permit ip any any
+ exit
+
+ip access-list extended ACCESO-IMPRESORAS
+ remark Control de acceso a impresoras VLAN 60
+ permit tcp 10.0.0.0 0.0.1.255 10.0.5.176 0.0.0.15 eq 9100
+ permit tcp 10.0.5.64 0.0.0.63 10.0.5.176 0.0.0.15 eq 9100
+ permit tcp 10.0.5.128 0.0.0.31 10.0.5.176 0.0.0.15 eq 9100
+ permit tcp 10.0.5.160 0.0.0.15 10.0.5.176 0.0.0.15 eq 9100
+ permit icmp any any echo
+ permit icmp any any echo-reply
+ deny ip any 10.0.5.176 0.0.0.15
+ permit ip any any
+ exit
+
+interface GigabitEthernet0/0.60
+ ip access-group ACCESO-IMPRESORAS in
+ exit
+
+! ===== CONFIGURACIÓN DE SYSLOG =====
+logging on
+logging trap informational
+logging facility local0
+logging source-interface GigabitEthernet0/0.99
+logging host 10.0.2.20
+service timestamps log datetime msec
+service timestamps debug datetime msec
+
+! ===== CONFIGURACIÓN SNMP =====
+snmp-server community public RO
+snmp-server community private RW
+snmp-server location "Sede Central - Piso 1"
+snmp-server contact "Admin TI"
+snmp-server enable traps
+snmp-server host 10.0.5.210 version 2c public
+
+end
+write memory
